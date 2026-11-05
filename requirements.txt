@@ -1,0 +1,8 @@
+ollama
+streamlit
+fastembed
+numpy
+pymupdf
+python-docx
+python-pptx
+onnxruntime==1.21.1

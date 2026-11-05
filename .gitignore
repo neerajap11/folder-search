@@ -1,0 +1,14 @@
+# Ignore everything by default, so private data can't be added by accident.
+*
+
+# Only these files are allowed in the repo.
+!.gitignore
+!README.md
+!requirements.txt
+!agent.py
+!app.py
+!folder_search.py
+!docs/
+!docs/screenshot.jpg
+!.streamlit/
+!.streamlit/config.toml
