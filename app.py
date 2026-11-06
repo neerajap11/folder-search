@@ -8,15 +8,8 @@ from pathlib import Path
 import ollama
 import streamlit as st
 
-import agent
+import workflow
 from folder_search import connect, search
-
-TOOL_LABELS = {
-    "search_documents": "Searching",
-    "read_file": "Reading",
-    "list_files": "Listing files",
-    "grep": "Finding exact text",
-}
 
 st.set_page_config(page_title="Folder Search", layout="centered")
 st.title("Folder Search")
@@ -50,14 +43,8 @@ if submitted and question.strip():
     else:
         started = time.time()
         with st.status("Working...", expanded=True) as status:
-            def show_tool(name, args):
-                detail = args.get("query") or args.get("text") or args.get("pattern") or ""
-                if args.get("path"):
-                    detail = Path(args["path"]).name
-                st.write(f"{TOOL_LABELS.get(name, name)}: {detail}")
-
             try:
-                answer = agent.run(question, on_tool=show_tool)
+                answer = workflow.run(question, on_step=st.write)
             except ConnectionError:
                 status.update(label="Could not reach Ollama", state="error")
                 st.error("Make sure the Ollama app is open, then try again.")

@@ -9,6 +9,7 @@ import argparse
 import os
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -103,8 +104,8 @@ def remove_file(db, path):
 def index(root):
     root = Path(root).expanduser().resolve()
     db = connect()
-    embedder = get_embedder()
-    known = {r[0]: (r[1], r[2]) for r in db.execute("SELECT path, mtime, size FROM files")}
+    embedder = None
+    known ={r[0]: (r[1], r[2]) for r in db.execute("SELECT path, mtime, size FROM files")}
     paths = list(find_files(root))
     seen = {str(p) for p in paths}
     for stale in [p for p in known if p.startswith(str(root)) and p not in seen]:
@@ -128,6 +129,7 @@ def index(root):
             except Exception as e:
                 status, detail = "error", f"{type(e).__name__}: {e}"[:200]
         if rows:
+            embedder = embedder or get_embedder()
             vectors = embedder.embed([f"{path.name}: {c}" for _, c in rows], batch_size=32)
             for (location, text), vector in zip(rows, vectors):
                 blob = np.asarray(vector, dtype=np.float32).tobytes()
@@ -147,6 +149,14 @@ def index(root):
         print(f"[{n}/{len(paths)}] {status}: {path.name} ({len(rows)} chunks)", flush=True)
     db.commit()
     stats()
+
+
+def watch(root, every):
+    """Re-index on a timer. Only new or changed files do any real work."""
+    while True:
+        index(root)
+        print(f"Next check in {every} seconds. Press Ctrl+C to stop.", flush=True)
+        time.sleep(every)
 
 
 def fts_query(query):
@@ -209,6 +219,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("index").add_argument("folder")
+    watch_parser = sub.add_parser("watch")
+    watch_parser.add_argument("folder")
+    watch_parser.add_argument("--every", type=int, default=600, help="Seconds between checks.")
     search_parser = sub.add_parser("search")
     search_parser.add_argument("query")
     search_parser.add_argument("--limit", type=int, default=8)
@@ -216,6 +229,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.command == "index":
         index(args.folder)
+    elif args.command == "watch":
+        watch(args.folder, args.every)
     elif args.command == "search":
         print_results(search(args.query, args.limit))
     else:

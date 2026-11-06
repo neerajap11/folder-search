@@ -8,6 +8,10 @@
 !agent.py
 !app.py
 !folder_search.py
+!workflow.py
+!gmail_search.py
+!mcp_server.py
+!mcp_agent.py
 !docs/
 !docs/screenshot.jpg
 !.streamlit/
